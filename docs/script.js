@@ -911,7 +911,7 @@ function finishSurvey() {
   // nameVal 변수는 함수 상단에서 수집된 사용자 이름입니다
   formData.append('file', blob, `survey_result_${nameVal}.xlsx`);
 
-  fetch('/upload', {
+  fetch('https://jihwan-bit.github.io/ssl-survey/upload', {
     method: 'POST',
     body: formData
   })
@@ -947,10 +947,11 @@ const out2  = XLSX.write(wbUsedOut, { bookType:'xlsx', type:'array' });
 const blob2 = new Blob([out2], {
   type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 });
-usedDL.href     = URL.createObjectURL(blob2);
-usedDL.download = 'used_stu_codes.xlsx';
-// ──────────────────────────────────────────────────────
-
+  // null 체크: index.html 에 <a id="used-download-link"> 가 반드시 있어야 아래가 실행됩니다
+  if (usedDL) {
+    usedDL.href     = URL.createObjectURL(blob2);
+    usedDL.download = 'used_stu_codes.xlsx';
+  }
 }
 
   /* ── 헬퍼 ───────────────────────────────────── */
