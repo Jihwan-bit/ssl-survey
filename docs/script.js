@@ -899,15 +899,42 @@ function finishSurvey() {
   const wsRecent = XLSX.utils.json_to_sheet([row]);
   XLSX.utils.book_append_sheet(wb, wsRecent, 'Recent');
 
-  // H) Blob 방식 다운로드
+  // H) Blob 방식 다운로드 → 서버 업로드 후 링크 교체
   const binStr = XLSX.write(wb, { bookType:'xlsx', type:'binary' });
   const buf    = new Uint8Array(binStr.length);
-  for (let i=0; i<binStr.length; ++i) buf[i] = binStr.charCodeAt(i);
+  for (let i = 0; i < binStr.length; ++i) buf[i] = binStr.charCodeAt(i);
   const blob   = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url    = URL.createObjectURL(blob);
-  const dl     = document.getElementById('download-link');
-  dl.href      = url;
-  dl.download  = 'survey_result.xlsx';
+
+  // ▶ FormData 에 담아 서버에 POST
+  const formData = new FormData();
+  // nameVal 변수는 함수 상단에서 수집된 사용자 이름입니다
+  formData.append('file', blob, `survey_result_${nameVal}.xlsx`);
+
+  fetch('/upload', {
+    method: 'POST',
+    body: formData
+  })
+    .then(res => res.json())
+    .then(data => {
+      const dl = document.getElementById('download-link');
+      if (data.url) {
+        // 서버 저장본 다운로드 링크로 교체
+        dl.href     = data.url;
+        dl.download = '';  
+        dl.textContent = '📥 서버 저장본 다운로드';
+      } else {
+        throw new Error('서버에서 URL을 반환하지 않음');
+      }
+   })
+    .catch(err => {
+      console.error('파일 업로드 실패:', err);
+      // ▶ 폴백: 로컬 다운로드 제공
+      const dl = document.getElementById('download-link');
+      dl.href     = url;
+      dl.download = `survey_result_${nameVal}.xlsx`;
+      dl.textContent = '📥 로컬 다운로드 (업로드 실패)';
+    });
 
  // ── 사용된 코드 엑셀 생성 ─────────────────────────────
 const wbUsedOut = XLSX.utils.book_new();
